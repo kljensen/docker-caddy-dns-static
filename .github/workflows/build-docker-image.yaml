@@ -64,8 +64,6 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.image.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Sign image
         env:

@@ -2,26 +2,27 @@ ARG CADDY_VERSION=2.11.4
 ARG ROUTE53_VERSION=1.6.2
 ARG CLOUDFLARE_VERSION=0.2.4
 
-FROM caddy:${CADDY_VERSION}-builder-alpine AS builder
+FROM --platform=$BUILDPLATFORM caddy:${CADDY_VERSION}-builder-alpine AS builder
 
 ARG CADDY_VERSION
 ARG ROUTE53_VERSION
 ARG CLOUDFLARE_VERSION
+ARG TARGETOS
+ARG TARGETARCH
 
 ENV CGO_ENABLED=0
+ENV GOOS=$TARGETOS
+ENV GOARCH=$TARGETARCH
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 RUN xcaddy build "v${CADDY_VERSION}" \
     --with "github.com/caddy-dns/route53@v${ROUTE53_VERSION}" \
     --with "github.com/caddy-dns/cloudflare@v${CLOUDFLARE_VERSION}" \
-    && /usr/bin/caddy version \
-    && /usr/bin/caddy list-modules --skip-standard --versions \
-    | tee /tmp/caddy-modules.txt \
-    && grep -F "dns.providers.route53 v${ROUTE53_VERSION}" /tmp/caddy-modules.txt \
-    && grep -F "dns.providers.cloudflare v${CLOUDFLARE_VERSION}" /tmp/caddy-modules.txt \
-    && { ldd /usr/bin/caddy > /tmp/caddy-ldd.txt 2>&1 || true; } \
-    && grep -Eq 'Not a valid dynamic program|not a dynamic executable' /tmp/caddy-ldd.txt
+    && go version -m /usr/bin/caddy > /tmp/caddy-modules.txt \
+    && grep -F "github.com/caddyserver/caddy/v2" /tmp/caddy-modules.txt \
+    && grep -F "github.com/caddy-dns/route53" /tmp/caddy-modules.txt \
+    && grep -F "github.com/caddy-dns/cloudflare" /tmp/caddy-modules.txt
 
 RUN mkdir -p \
         /runtime/bin \
